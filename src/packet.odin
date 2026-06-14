@@ -59,7 +59,7 @@ generic_decode :: proc($D: typeid, $ConcreteT: typeid) -> proc(buf: []byte, offs
 // encode_packet writes header + payload to a single byte buffer. The
 // payload is encoded first so header.length can be filled with the
 // real encoded size (needed for variable-size payloads).
-encode_packet :: proc(reg: ^Registry($T, $D), pkt: Packet(T, D)) -> []byte {
+encode_packet :: proc(reg: ^NetRegistry($T, $D), pkt: Packet(T, D)) -> []byte {
 	payload_buf := make([dynamic]byte)
 	defer delete(payload_buf)
 
@@ -78,7 +78,7 @@ encode_packet :: proc(reg: ^Registry($T, $D), pkt: Packet(T, D)) -> []byte {
 
 // decode_packet reads payload_buf (already sized by header.length) into
 // the payload union using the registry vtable for header.type.
-decode_packet :: proc(reg: ^Registry($T, $D), header: PacketHeader(T), payload_buf: []byte) -> (Packet(T, D), bool) {
+decode_packet :: proc(reg: ^NetRegistry($T, $D), header: PacketHeader(T), payload_buf: []byte) -> (Packet(T, D), bool) {
 	vt := reg.entries[header.type]
 	if vt.decode == nil {
 		return Packet(T, D){}, false

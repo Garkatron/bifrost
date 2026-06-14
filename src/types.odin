@@ -3,7 +3,7 @@ package bifrost
 import "core:encoding/uuid"
 
 
-Registry :: struct($T: typeid, $V: typeid) {
+NetRegistry :: struct($T: typeid, $V: typeid) {
     entries: [T]IPacket(V),
 }
 

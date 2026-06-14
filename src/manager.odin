@@ -19,7 +19,7 @@ NetManagerConfig :: struct {
 NetManager :: struct($T: typeid, $D: typeid) {
 	config:   NetManagerConfig,
 	socket:   net.TCP_Socket,
-	registry: ^Registry(T, D),
+	registry: ^NetRegistry(T, D),
 
 	seq: u32,
 
@@ -42,7 +42,7 @@ net_manager_new :: proc(
 	config: NetManagerConfig,
 	socket: net.TCP_Socket,
 	id: uuid.Identifier,
-	registry: ^Registry(T, D),
+	registry: ^NetRegistry(T, D),
 	incoming: ^MutexQueue(NetworkMessage(T, D)),
 ) -> ^NetManager(T, D) {
 	m := new(NetManager(T, D))
