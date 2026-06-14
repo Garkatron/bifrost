@@ -89,3 +89,12 @@ decode_packet :: proc(reg: ^NetRegistry($T, $D), header: PacketHeader(T), payloa
 
 	return Packet(T, D){header = header, payload = payload}, true
 }
+
+
+unwrap_message :: proc($T: typeid, $D: typeid, data: rawptr) -> (msg: ^NetworkMessage(T, D), payload: ^T, ok: bool) {
+    if data == nil do return nil, nil, false
+    msg = (^NetworkMessage(T, D))(data)
+    payload, ok = &msg.packet.payload.(T)
+    if !ok do return nil, nil, false
+    return msg, payload, ok
+}

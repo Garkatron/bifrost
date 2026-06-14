@@ -1,4 +1,4 @@
-package client
+package bifrost_client
 
 import bi "../../src"
 import "core:fmt"
@@ -23,7 +23,7 @@ client_new :: proc($T: typeid, $D: typeid, config: bi.NetManagerConfig) -> NetCl
 	return net_client
 }
 
-connect :: proc(client: ^NetClient($T, $D), registry: ^bi.Registry(T, D), endpoint: net.Endpoint) -> bool {
+connect :: proc(client: ^NetClient($T, $D), registry: ^bi.NetRegistry(T, D), endpoint: net.Endpoint) -> bool {
 	socket, dial_err := net.dial_tcp(endpoint)
 	if dial_err != nil {
 		// debug.log("connection error (is the server running?):", dial_err)

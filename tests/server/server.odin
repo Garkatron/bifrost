@@ -8,7 +8,7 @@ import shared "../shared"
 import "core:log"
 import bn "core:net"
 
-registry: net.Registry(shared.PacketType, shared.PacketData)
+registry: net.NetRegistry(shared.PacketType, shared.PacketData)
 server:   sv.NetServer(shared.PacketType, shared.PacketData)
 
 main :: proc() {

@@ -1,4 +1,4 @@
-package server
+package bifrost_server
 
 import bi "../../src"
 import "core:net"
@@ -13,13 +13,13 @@ NetServer :: struct($T: typeid, $D: typeid) {
 	clients:       map[uuid.Identifier]^bi.NetManager(T, D),
 	clients_mutex: sync.Mutex,
 	incoming:      ^bi.MutexQueue(bi.NetworkMessage(T, D)),
-	registry:      ^bi.Registry(T, D),
+	registry:      ^bi.NetRegistry(T, D),
 	config:        bi.NetManagerConfig,
 	thread_accept: ^thread.Thread,
 	running:       bool,
 }
 
-server_new :: proc($T: typeid, $D: typeid, listener: net.TCP_Socket, registry: ^bi.Registry(T, D), config: bi.NetManagerConfig) -> NetServer(T, D) {
+server_new :: proc($T: typeid, $D: typeid, listener: net.TCP_Socket, registry: ^bi.NetRegistry(T, D), config: bi.NetManagerConfig) -> NetServer(T, D) {
 	return NetServer(T, D){
 		socket   = listener,
 		clients  = make(map[uuid.Identifier]^bi.NetManager(T, D)),
