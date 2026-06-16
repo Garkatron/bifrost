@@ -34,7 +34,8 @@ Config :: struct {
 	packet_delay:    u32, // milliseconds
 	timeout_time:    u32, // milliseconds
 	max_connections: uint,
-	using address: enet.Address,
+	host: cstring,
+	port: u16,
 	incoming_bandwidth: u32,
 	outgoing_bandwidth: u32,
 }

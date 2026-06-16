@@ -9,6 +9,7 @@ PacketHeader :: struct($T: typeid) {
 	type:   T,
 	seq:    u32, // injected by the network manager
 	time:   i64, // injected by the network manager
+	length: u16,
 }
 
 // Packet pairs a header (keyed by enum T) with a payload union D.

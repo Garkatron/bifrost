@@ -26,7 +26,7 @@ Server :: struct($T: typeid, $D: typeid) {
 	clients_mutex: sync.Mutex,
 	client_map: map[u32]ClientData,
 
-	host: enet.Host,
+	host: ^enet.Host,
 
 	seq: u32,
 
@@ -39,29 +39,34 @@ Server :: struct($T: typeid, $D: typeid) {
 }
 
 
-net_manager_new :: proc(
+server_new :: proc(
 	$T: typeid, $D: typeid,
 	config: Config,
-	id: uuid.Identifier,
 	registry: ^NetRegistry(T, D),
-	incoming: ^MutexQueue(NetworkMessage(T, D)),
 	logger := context.logger
-) -> ^Server(T, D) {
-	m := new(Server(T, D))
-	m.config   = config
-	m.seq      = 0
-	m.registry = registry
-	m.incoming = incoming
-	m.outgoing = new(MutexQueue(OutgoingMessage(T, D)))
-	m.running  = false
-	m.logger   = logger
+) -> Server(T, D) {
+	m := Server(T, D) {
+		config   = config,
+		seq      = 0,
+		registry = registry,
+		incoming = new(MutexQueue(NetworkMessage(T, D))),
+		outgoing = new(MutexQueue(OutgoingMessage(T, D))),
+		running  = false,
+		logger   = logger
+	}
+
 	queue_init(m.outgoing)
+	queue_init(m.incoming)
 	return m
 }
 
+server_poll_all :: proc(m: ^Server($T, $D)) -> []NetworkMessage(T, D) {
+    return queue_pop_all(m.incoming)
+}
+
 server_start :: proc(m: ^Server($T, $D)) {
-	if m.logger != nil {
-		context.logger = m.logger
+	if logger, ok := m.logger.(log.Logger); ok {
+		context.logger = logger
 	}
 
 	if enet.initialize() != 0 {
@@ -124,11 +129,12 @@ _thread_enet_loop :: proc(manager: ^Server($T, $D)) {
 		if result == 0 do continue
 
 		switch event.type {
-		case .CONNECT:    handle_connect(manager, &event)
-		case .RECEIVE:
-			handle_receive(manager, &event)
-			enet.packet_destroy(event.packet)
-		case .DISCONNECT: handle_disconnect(manager, &event)
+			case .CONNECT:    handle_connect(manager, &event)
+			case .RECEIVE:
+				handle_receive(manager, &event)
+				enet.packet_destroy(event.packet)
+			case .DISCONNECT: handle_disconnect(manager, &event)
+			case .NONE: return
 		}
 	}
 }
@@ -168,7 +174,7 @@ handle_disconnect :: proc(m: ^Server($T, $D), event: ^enet.Event) {
 	sync.mutex_lock(&m.clients_mutex)
 	defer sync.mutex_unlock(&m.clients_mutex)
 	if event.peer.connectID in m.client_map {
-		name := m.client_map[event.peer.connectID].name
+		// name := m.client_map[event.peer.connectID].name
 		delete_key(&m.client_map, event.peer.connectID)
 	}
 }

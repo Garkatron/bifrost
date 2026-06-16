@@ -1,5 +1,6 @@
 package bifrost
 
+import "core:encoding/uuid"
 import "core:log"
 import "core:thread"
 import "core:time"
@@ -14,6 +15,8 @@ Client :: struct($T: typeid, $D: typeid) {
 	peer: ^enet.Peer,
 
 	seq: u32,
+	id: u32,
+	uid: uuid.Identifier,
 
 	incoming: ^MutexQueue(NetworkMessage(T, D)),
 	outgoing: ^MutexQueue(OutgoingMessage(T, D)),
@@ -22,25 +25,26 @@ Client :: struct($T: typeid, $D: typeid) {
 	running:     bool,
 }
 
-client_new :: proc(
-	$T: typeid, $D: typeid,
-	config: Config,
-	registry: ^NetRegistry(T, D),
-	incoming: ^MutexQueue(NetworkMessage(T, D)),
-	logger := context.logger,
-) -> ^Client(T, D) {
-	m := new(Client(T, D))
-	m.config   = config
-	m.seq      = 0
-	m.registry = registry
-	m.incoming = incoming
-	m.outgoing = new(MutexQueue(OutgoingMessage(T, D)))
-	m.running  = false
-	m.logger   = logger
+client_new :: proc($T: typeid, $D: typeid, config: Config, registry: ^NetRegistry(T, D), logger := context.logger) -> Client(T, D) {
+	m := Client(T, D){
+		config   = config,
+		seq      = 0,
+		registry = registry,
+		incoming = new(MutexQueue(NetworkMessage(T, D))),
+		outgoing = new(MutexQueue(OutgoingMessage(T, D))),
+		running  = false,
+		logger   = logger
+	}
+
 	queue_init(m.outgoing)
+	queue_init(m.incoming)
 	return m
 }
 
+
+client_poll_all :: proc(m: ^Client($T, $D)) -> []NetworkMessage(T, D) {
+    return queue_pop_all(m.incoming)
+}
 client_start :: proc(m: ^Client($T, $D)) -> bool {
 	if m.logger != nil do context.logger = m.logger.?
 
@@ -56,8 +60,8 @@ client_start :: proc(m: ^Client($T, $D)) -> bool {
 	}
 
 	address: enet.Address
-	enet.address_set_host(&address, m.config.host)
 	address.port = m.config.port
+	enet.address_set_host(&address, m.config.host)
 
 	m.peer = enet.host_connect(m.host, &address, m.config.max_connections, 0)
 	if m.peer == nil {
@@ -124,14 +128,15 @@ _client_thread_loop :: proc(m: ^Client($T, $D)) {
 		if result == 0 do continue
 
 		switch event.type {
-		case .CONNECT:
-			log.infof("Connected to server.")
-		case .RECEIVE:
-			_client_handle_receive(m, &event)
-			enet.packet_destroy(event.packet)
-		case .DISCONNECT:
-			log.infof("Disconnected from server.")
-			m.running = false
+			case .CONNECT:
+				log.infof("Connected to server.")
+			case .RECEIVE:
+				_client_handle_receive(m, &event)
+				enet.packet_destroy(event.packet)
+			case .DISCONNECT:
+				log.infof("Disconnected from server.")
+				m.running = false
+			case .NONE: return
 		}
 	}
 }
@@ -146,15 +151,16 @@ _client_handle_system :: proc(m: ^Client($T, $D), event: ^enet.Event) {
     if event.packet.dataLength < size_of(SystemPacketType) do return
     type := (^SystemPacketType)(event.packet.data)^
     switch type {
-    case .HANDSHAKE:
-        hs := (^HandshakePayload)(event.packet.data)^
-        m.id  = hs.id
-        m.uid = hs.uid
-        log.infof("Assigned id=%v", m.id)
-    case .PING:
-        pong := SystemPacketType.PONG
-        packet := enet.packet_create(&pong, size_of(SystemPacketType), {.RELIABLE})
-        enet.peer_send(m.peer, BIFROST_SYSTEM_CHANNEL, packet)
+	    case .HANDSHAKE:
+	        hs := (^HandshakePayload)(event.packet.data)^
+	        m.id  = hs.id
+	        m.uid = hs.uid
+	        log.infof("Assigned id=%v", m.id)
+	    case .PING:
+	        pong := SystemPacketType.PONG
+	        packet := enet.packet_create(&pong, size_of(SystemPacketType), {.RELIABLE})
+	        enet.peer_send(m.peer, BIFROST_SYSTEM_CHANNEL, packet)
+	    case .PONG: return
     }
 }
 
