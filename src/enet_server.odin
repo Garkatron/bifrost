@@ -59,7 +59,7 @@ net_manager_new :: proc(
 	return m
 }
 
-net_manager_start :: proc(m: ^Server($T, $D)) {
+server_start :: proc(m: ^Server($T, $D)) {
 	if m.logger != nil {
 		context.logger = m.logger
 	}
@@ -74,13 +74,13 @@ net_manager_start :: proc(m: ^Server($T, $D)) {
 	m.thread_enet = thread.create_and_start_with_data(m, _thread_enet_entry(T, D))
 }
 
-net_manager_close :: proc(m: ^Server($T, $D)) {
+server_close :: proc(m: ^Server($T, $D)) {
 	// TODO: transport teardown
 	m.running = false
 }
 
-net_manager_destroy :: proc(m: ^Server($T, $D)) {
-	if m.running do net_manager_close(m)
+server_destroy :: proc(m: ^Server($T, $D)) {
+	if m.running do server_close(m)
 	thread.join(m.thread_enet)
 	thread.destroy(m.thread_enet)
 	queue_destroy(m.outgoing)
