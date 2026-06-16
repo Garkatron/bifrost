@@ -7,7 +7,6 @@ MAX_BROADCAST_TARGETS :: 64
 // PacketHeader is generic over the user-defined packet type enum T.
 PacketHeader :: struct($T: typeid) {
 	type:   T,
-	length: u16, // payload size in bytes, filled by encode_packet
 	seq:    u32, // injected by the network manager
 	time:   i64, // injected by the network manager
 }
@@ -30,6 +29,7 @@ make_packet :: proc($T: typeid, $D: typeid, type: T, payload: D) -> Packet(T, D)
 IPacket :: struct($D: typeid) {
 	encode: proc(buf: ^[dynamic]byte, payload: D),
 	decode: proc(buf: []byte, offset: ^int) -> D,
+	free:   proc(payload: D),
 }
 
 
@@ -97,4 +97,11 @@ unwrap_message :: proc($T: typeid, $D: typeid, data: rawptr) -> (msg: ^NetworkMe
     payload, ok = &msg.packet.payload.(T)
     if !ok do return nil, nil, false
     return msg, payload, ok
+}
+
+free_packet_payload :: proc(registry: ^NetRegistry($T, $D), pkt: Packet(T, D)) {
+	entry := registry.entries[pkt.header.type]
+	if entry.free != nil {
+	    entry.free(pkt.payload)
+	}
 }

@@ -24,8 +24,8 @@ main :: proc() {
 		decode = net.generic_decode(shared.PacketData, shared.Message),
 	}
 
-	client = cl.client_new(shared.PacketType, shared.PacketData, net.NetManagerConfig{
-		debug           = false,
+	client = cl.client_new(shared.PacketType, shared.PacketData, net.EnetServerConfig{
+		EnetServerConfig           = false,
 		max_connections = 1,
 		packet_delay    = 0,
 		timeout_time    = 1000,

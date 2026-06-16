@@ -6,35 +6,35 @@ import "core:fmt"
 
 MutexQueue :: struct($T: typeid) {
     mutex:    sync.Mutex,
-    messages: [dynamic]T,
+    values: [dynamic]T,
 }
 
 queue_init :: proc(q: ^MutexQueue($T)) {
-	q.messages = make([dynamic]T)
+	q.values = make([dynamic]T)
 	q.mutex = {}
 }
 
 queue_destroy :: proc(q: ^MutexQueue($T)) {
-	delete(q.messages)
+	delete(q.values)
 }
 
 queue_push :: proc(q: ^MutexQueue($T), msg: T) {
 	sync.mutex_lock(&q.mutex)
 	defer sync.mutex_unlock(&q.mutex)
-	append(&q.messages, msg)
+	append(&q.values, msg)
 }
 
 queue_pop_all :: proc(q: ^MutexQueue($T)) -> [dynamic]T {
 	sync.mutex_lock(&q.mutex)
 	defer sync.mutex_unlock(&q.mutex)
 
-	if len(q.messages) == 0 {
+	if len(q.values) == 0 {
 		return nil
 	}
 
-	out := q.messages
+	out := q.values
 
-	q.messages = make([dynamic]T)
+	q.values = make([dynamic]T)
 
 	return out
 }

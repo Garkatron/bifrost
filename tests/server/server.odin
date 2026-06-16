@@ -31,8 +31,8 @@ main :: proc() {
 		return
 	}
 
-	server = sv.server_new(shared.PacketType, shared.PacketData, listener, &registry, net.NetManagerConfig{
-		debug           = false,
+	server = sv.server_new(shared.PacketType, shared.PacketData, listener, &registry, net.EnetServerConfig{
+		EnetServerConfig           = false,
 		max_connections = sv.MAX_CLIENTS,
 		packet_delay    = 0,
 		timeout_time    = 1000,

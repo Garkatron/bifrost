@@ -124,6 +124,8 @@ _thread_send :: proc(manager: ^NetManager($T, $D)) {
 				encoded := encode_packet(manager.registry, msg.packet)
 				net.send_tcp(manager.socket, encoded)
 				delete(encoded)
+				free_packet_payload(manager.registry, msg.packet)
+
 			}
 			delete(messages)
 		}
